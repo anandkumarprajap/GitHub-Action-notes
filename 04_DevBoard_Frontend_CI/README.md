@@ -1,4 +1,4 @@
-```code
+```yaml
 name: CI
 
 on:

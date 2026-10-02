@@ -1,3 +1,64 @@
+```code
+name: CI
+
+on:
+  push:
+    branches: [fix/lint]
+
+jobs:
+
+  # ==========================================================
+  # JOB 1 — LINT
+  # ==========================================================
+  code-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Lint (Biome)
+        run: npm run lint
+
+
+  # ==========================================================
+  # JOB 2 — BUILD AND PUSH
+  # ==========================================================
+  build-and-push:
+
+    # IMPORTANT:
+    # This job will run ONLY after code-lint succeeds.
+    needs: [code-lint]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Docker Setup [Login]
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker Build and Push
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-fe-master:latest   
+```
+
+
 # GitHub Actions — DevBoard Frontend CI
 
 ## 1. Goal

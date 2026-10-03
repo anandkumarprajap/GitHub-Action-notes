@@ -125,6 +125,9 @@ jobs:
                 docker compose up -d
 ```
 
+![Image ci](ci.png)
+
+
 # DevBoard GitHub Actions CI/CD Pipeline
 
 ## 1. Overall Goal

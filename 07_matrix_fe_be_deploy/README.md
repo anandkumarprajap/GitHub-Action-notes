@@ -1,0 +1,167 @@
+## CI.yml
+
+```yaml
+# Goal - I have to Lint, Build, Test the code for Frontend & Backend
+# then Push the images to DockerHub 
+name: CI
+
+on: 
+    push:
+        # paths:
+        #   - '**'
+        #   - '!.github/workflows/**'
+        branches: [feat/matrix-docker-build]
+
+jobs:
+    lint-frontend:
+        # Github runner
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Setup NodeJs
+              uses: actions/setup-node@v6
+              with:
+                node-version: '20'
+                cache: npm
+                cache-dependency-path: frontend/package-lock.json
+            
+            - name: Install npm Packages
+              run: npm install
+              working-directory: frontend
+
+            - name: Run Linter
+              run: npm run lint
+              working-directory: frontend
+
+            - name: Run Tests
+              run: npm run test 
+              working-directory: frontend
+            
+                
+    lint-backend:
+        # Github runner
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                go-version: '1.23'
+                go-version-file: 'go.mod'
+                cache-dependency-path: go.sum
+            
+            - name: Run Go Formatter
+              run: go fmt
+              working-directory: backend
+
+            - name: Run Go Vet
+              run: go vet
+              working-directory: backend
+            
+            - name: Run Tests
+              run: go test 
+              working-directory: backend
+          
+
+    build-and-push:
+        needs: [lint-frontend,lint-backend] 
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            folder: ['frontend','backend']
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v7
+
+            - name: Docker Setup [Login]
+              uses: docker/login-action@v4
+              with:
+                  username: ${{ vars.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Docker Build and Push
+              uses: docker/build-push-action@v7
+              with:
+                context: ./${{ matrix.folder}}
+                push: true
+                tags: ${{ vars.DOCKERHUB_USERNAME }}/devboard-${{ matrix.folder}}:latest
+          
+
+    deploy:
+        needs: [lint-frontend,lint-backend,build-and-push]
+        uses: ./.github/workflows/cd.yml
+        secrets: inherit
+```
+
+## CD.yml
+
+```yaml
+# Goal: To deploy the built images from CI Steps once the CI Worklow is Succeeded
+
+name: CD
+
+on: 
+    workflow_call:
+
+jobs:
+    deploy:
+        
+        runs-on: self-hosted
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v7
+
+            - name: Copy Example Env to main env
+              run: cp .env.example .env
+
+            - name: Docker Setup [Login]
+              uses: docker/login-action@v4
+              with:
+                username: ${{ vars.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Deploy the containers with Docker Compose
+              run: |
+                docker compose pull
+                docker compose up -d
+```
+
+## matrix.yml
+
+```yaml
+# Goal To install multiple versions of Go and do linting for multiple versions
+name: Go Linter
+
+on: 
+    workflow_dispatch:
+
+jobs:
+    code-format:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: 
+                go: ['1.22','1.23','1.24']
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v7
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                go-version: ${{ matrix.go }}
+                go-version-file: 'go.mod'
+                cache-dependency-path: go.sum
+            
+            - name: Run Go Formatter
+              run: go fmt
+              working-directory: backend
+
+            - name: Run Go Vet
+              run: go vet
+              working-directory: backend
+```

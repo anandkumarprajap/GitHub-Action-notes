@@ -1,3 +1,26 @@
+```yaml
+# Workflows [No indentation required for naming the workflow]
+name: Hello
+
+# On tells when the workflow should run (Give the indentation by tab)
+on:
+  workflow_dispatch: 
+
+# Job tells What the workflow should do, there can be one or more then one jobs , hence we write a jobs
+# jobs is an objects so needs indentation
+
+jobs:
+  # 1st (job Give indentation)
+  say-hello:
+    # Created on Ephermal Container with Ubuntu running
+    runs-on: ubuntu-latest
+    # The ephermal container will have steps to execute, hence name those steps and use run: run has the command
+    steps:
+      - name: Say hello to everyone
+        run: echo "Hello Dosto"
+```
+
+
 # GitHub Actions — Basic Workflow Notes
 
 ## 1. Basic GitHub Actions Workflow

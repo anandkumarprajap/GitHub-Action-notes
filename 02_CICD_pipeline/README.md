@@ -1,3 +1,37 @@
+```yaml
+name: CICD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  code:
+    runs-on: ubuntu-latest 
+    steps:
+      - name: clone the code
+        run: echo "Cloning the code"
+  build:
+    needs: [code]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build using Docker
+        run: echo "Building using Docker"
+  test:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Running test cases
+        run: echo "Testing the app"
+  deploy:
+    needs: [build,test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploying on the machine
+        run: echo "Deploying the code"
+```
+
+
+
 # GitHub Actions CI/CD Pipeline — Basic Structure
 
 ## 1. What is this Workflow?
